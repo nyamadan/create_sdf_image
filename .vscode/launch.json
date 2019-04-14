@@ -13,6 +13,8 @@
             "args": [
                 "-w", "256",
                 "-h", "256",
+                "-r", "20",
+                "--dist-color",
                 "input.png", "output.png"
             ],
             "stopAtEntry": false,

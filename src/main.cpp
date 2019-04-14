@@ -17,9 +17,10 @@
 
 int main(int argc, const char *const *argv) {
     args::ArgumentParser parser("Create sdf image.");
-    args::ValueFlag<unsigned short> argRadius(parser, "radius", "Sampling radius.", {'r'}, 8);
-    args::ValueFlag<unsigned short> argWidth(parser, "width", "Output image width.", {'w'});
-    args::ValueFlag<unsigned short> argHeight(parser, "height", "Output image height.", {'h'});
+    args::Flag argDistanceColor(parser, "dist-color", "Output distance into rgb.", {"dist-color"});
+    args::ValueFlag<unsigned short> argRadius(parser, "radius", "Sampling radius.", {'r', "radius"}, 8);
+    args::ValueFlag<unsigned short> argWidth(parser, "width", "Output image width.", {'w', "width"});
+    args::ValueFlag<unsigned short> argHeight(parser, "height", "Output image height.", {'h', "heigt"});
     args::Positional<std::string> argInput(parser, "input", "Input image.",
                                            args::Options::Required);
     args::Positional<std::string> argOutput(parser, "output", "Output image.",
@@ -54,9 +55,13 @@ int main(int argc, const char *const *argv) {
 
             auto a0 = srcImage[index + 3];
 
-            dstImage[index + 0] = srcImage[index + 0];
-            dstImage[index + 1] = srcImage[index + 1];
-            dstImage[index + 2] = srcImage[index + 2];
+            if(argDistanceColor) {
+                dstImage[index + 3] = 0xff;
+            } else {
+                dstImage[index + 0] = srcImage[index + 0];
+                dstImage[index + 1] = srcImage[index + 1];
+                dstImage[index + 2] = srcImage[index + 2];
+            }
 
             auto minDistSq = INT32_MAX;
             for (auto yy = -r; yy <= r; yy++) {
@@ -82,14 +87,22 @@ int main(int argc, const char *const *argv) {
                 }
             }
 
+            int result = 0;
             if (minDistSq == INT32_MAX) {
-                dstImage[index + 3] = a0 < 128 ? 0x00 : 0xff;
-                continue;
+                result = a0 < 128 ? 0x00 : 0xff;
+            } else {
+                auto distSq = sqrt(s * minDistSq);
+                distSq = ((a0 < 128) ? -distSq : distSq) + 0.5f;
+                result = static_cast<uint8_t>(round(255.0f * distSq));
             }
 
-            auto distSq = sqrt(s * minDistSq);
-            distSq = ((a0 < 128) ? -distSq : distSq) + 0.5f;
-            dstImage[index + 3] = static_cast<uint8_t>(round(255.0f * distSq));
+            if(argDistanceColor) {
+                dstImage[index + 0] = result;
+                dstImage[index + 1] = result;
+                dstImage[index + 2] = result;
+            } else {
+                dstImage[index + 3] = result;
+            }
         }
     }
 
