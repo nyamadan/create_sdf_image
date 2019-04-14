@@ -11,7 +11,9 @@
             "program": "${workspaceFolder}/build/create_sdf_image.exe",
             "preLaunchTask": "build",
             "args": [
-                "--half", "input.png", "output.png"
+                "-w", "256",
+                "-h", "256",
+                "input.png", "output.png"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

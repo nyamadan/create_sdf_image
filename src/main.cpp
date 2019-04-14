@@ -17,9 +17,9 @@
 
 int main(int argc, const char *const *argv) {
     args::ArgumentParser parser("Create sdf image.");
-    args::HelpFlag help(parser, "help", "Display this help menu",
-                        {'h', "help"});
-    args::Flag argHalf(parser, "half", "output half scale image.", {"half"});
+    args::ValueFlag<unsigned short> argRadius(parser, "radius", "Sampling radius.", {'r'}, 8);
+    args::ValueFlag<unsigned short> argWidth(parser, "width", "Output image width.", {'w'});
+    args::ValueFlag<unsigned short> argHeight(parser, "height", "Output image height.", {'h'});
     args::Positional<std::string> argInput(parser, "input", "Input image.",
                                            args::Options::Required);
     args::Positional<std::string> argOutput(parser, "output", "Output image.",
@@ -29,9 +29,6 @@ int main(int argc, const char *const *argv) {
         parser.ParseCLI(argc, argv);
     } catch (const args::Completion &e) {
         std::cout << e.what();
-        return 0;
-    } catch (const args::Help &) {
-        std::cout << parser;
         return 0;
     } catch (const args::RequiredError &e) {
         std::cerr << e.what() << std::endl;
@@ -49,7 +46,7 @@ int main(int argc, const char *const *argv) {
     auto size = width * height * comp;
     auto dstImage = std::make_unique<uint8_t[]>(size);
 
-    auto r = 8;
+    auto r = args::get(argRadius);
     auto s = 0.125f / (r * r);
     for (auto y = 0; y < height; y++) {
         for (auto x = 0; x < width; x++) {
@@ -58,8 +55,8 @@ int main(int argc, const char *const *argv) {
             auto a0 = srcImage[index + 3];
 
             dstImage[index + 0] = srcImage[index + 0];
-            dstImage[index + 1] = srcImage[index + 0];
-            dstImage[index + 2] = srcImage[index + 0];
+            dstImage[index + 1] = srcImage[index + 1];
+            dstImage[index + 2] = srcImage[index + 2];
 
             auto minDistSq = INT32_MAX;
             for (auto yy = -r; yy <= r; yy++) {
@@ -98,16 +95,14 @@ int main(int argc, const char *const *argv) {
 
     stbi_image_free(srcImage);
 
-    if (argHalf.Get()) {
-        auto w = width / 2;
-        auto h = height / 2;
+    if (argWidth || argHeight) {
+        auto w = argWidth ? args::get(argWidth) : width;
+        auto h = argHeight ? args::get(argHeight) : height;
         auto img = std::make_unique<uint8_t[]>(w * h * comp);
-        stbir_resize_uint8(dstImage.get(), width, height, 0, img.get(), w, h, 0,
-                           comp);
+        stbir_resize_uint8(dstImage.get(), width, height, 0, img.get(), w, h, 0, comp);
         stbi_write_png(argOutput.Get().c_str(), w, h, comp, img.get(), 0);
     } else {
-        stbi_write_png(argOutput.Get().c_str(), width, height, comp,
-                       dstImage.get(), 0);
+        stbi_write_png(argOutput.Get().c_str(), width, height, comp, dstImage.get(), 0);
     }
 
     return 0;
