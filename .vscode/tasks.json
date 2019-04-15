@@ -10,7 +10,7 @@
             "args": [
                 "--build", "${workspaceFolder}/build",
                 "--config", "Debug",
-                "--target", "create_sdf_image",
+                "--target", "generate_sdf_image",
                 "--",
                 "-j", "1"
             ],
